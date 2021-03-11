@@ -8,6 +8,7 @@ final _URL_NEWS = 'https://newsapi.org/v2';
 final _APiKEY = '355948c54bed4dcbbff753000a899db0';
 
 class NewsService with ChangeNotifier {
+  String _selectedCategory = 'business';
   List<Article> headlines = [];
   List<Categoria> categorias = [
     Categoria(FontAwesomeIcons.building, 'business'),
@@ -19,8 +20,33 @@ class NewsService with ChangeNotifier {
     Categoria(FontAwesomeIcons.memory, 'technology')
   ];
 
+  //Vamos a crear un map para almacenar listas por categorias
+  Map<String, List<Article>> categoryArticles = {};
+
   NewsService() {
     this.getTopHeadlines();
+    categorias.forEach((element) {
+      //de esta forma se inicializa cada categoria en una lista
+      this.categoryArticles[element.name] = new List();
+    });
+  }
+  get selectedCategory => this._selectedCategory;
+  set selectedCategory(String cat) {
+    this._selectedCategory = cat;
+    this._getArticlesByCategory(cat);
+    notifyListeners();
+  }
+
+  _getArticlesByCategory(String cat) async {
+    if (this.categoryArticles[cat].length > 0) {
+      return this.categoryArticles[cat];
+    }
+    final url =
+        '$_URL_NEWS/top-headlines?apiKey=$_APiKEY&country=us&category=$cat';
+    final resp = await http.get(url);
+    final newsResponse = newsResponseFromJson(resp.body);
+    this.categoryArticles[cat].addAll(newsResponse.articles);
+    notifyListeners();
   }
 
   getTopHeadlines() async {
@@ -31,4 +57,7 @@ class NewsService with ChangeNotifier {
     this.headlines.addAll(newsResponse.articles);
     notifyListeners();
   }
+
+  List<Article> get getArticlesbyCategory =>
+      this.categoryArticles[this.selectedCategory];
 }
